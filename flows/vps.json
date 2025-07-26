@@ -1,11 +1,11 @@
 {
   "id": "vps-setup",
   "title": "VPS Setup & Configuration",
-  "description": "Complete workflow for setting up a VPS server across different cloud providers (Oracle, Hetzner, AWS)",
+  "description": "Complete workflow for setting up a VPS server across different cloud providers",
   "category": "Infrastructure",
   "version": "1.0.0",
   "author": "Flow App",
-  "tags": ["vps", "server", "cloud", "infrastructure"],
+  "tags": ["server", "cloud", "infrastructure"],
   "steps": [
     {
     "id": "start",
@@ -13,74 +13,108 @@
     "title": "Pick your Cloud Provider",
     "question": "Choose your Cloud Provider",
     "options": [
-      { "label": "Oracle", "next": "oracle_instance_creation" },
-      { "label": "Hetzner", "next": "hetzner_vps_creation" },
-      { "label": "AWS", "next": "aws_vps_creation" }
+      { "label": "Oracle", "next": "ssh_generation", "context": "oracle" },
+      { "label": "Hetzner", "next": "ssh_generation", "context": "hetzner" },
+      { "label": "AWS", "next": "ssh_generation", "context": "aws" }
     ]
   },
   {
-    "id": "oracle_instance_creation",
+    "id": "ssh_generation",
     "type": "step",
-    "title": "Create VPS Instance (Oracle Cloud)",
-    "description": "Follow this tutorial to create your VPS instance on Oracle Cloud: https://youtu.be/g7sP33QtuxM?si=yHVgbFAkeBMyAPr_",
-    "commands": [
-      "Watch the video for detailed instructions."
+    "title": "Generate SSH Key Pair",
+    "description": "Generate a named SSH key pair for your VPS server",
+    "inputs": [
+      {
+        "id": "server_name",
+        "type": "text",
+        "label": "Server Name",
+        "placeholder": "e.g., web-server-01",
+        "required": true
+      }
     ],
-    "next": "oracle_reserve_ip"
+    "commands": [
+      "mkdir -p ~/.ssh/{{provider}}",
+      "ssh-keygen -t ed25519 -f ~/.ssh/{{provider}}/{{server_name}} -C \"{{server_name}}-$(date +%Y%m%d)-$(whoami)\"",
+      "cat ~/.ssh/{{provider}}/{{server_name}}.pub",
+      "# Copy the public key output above for server setup",
+      "# Add to SSH config file:",
+      "echo -e \"Host {{server_name}}\\n  HostName YOUR_SERVER_IP\\n  User root\\n  IdentityFile ~/.ssh/{{provider}}/{{server_name}}\" >> ~/.ssh/config"
+    ],
+    "next": "create_instance"
   },
   {
-    "id": "oracle_reserve_ip",
+    "id": "create_instance",
     "type": "step",
-    "title": "Reserve Public IP (Oracle Cloud)",
-    "description": "Reserve a public IP address for your VPS instance: https://www.youtube.com/watch?v=JcH7aiL2CfQ",
-    "commands": [
-      "Watch the video for detailed instructions."
-    ],
-    "next": "oracle_open_ports"
+    "title": "Create VPS Instance",
+    "description": "Create your VPS instance on the selected cloud provider",
+    "variants": {
+      "oracle": {
+        "description": "Follow this tutorial to create your VPS instance on Oracle Cloud: https://youtu.be/g7sP33QtuxM?si=yHVgbFAkeBMyAPr_",
+        "commands": ["Watch the video for detailed instructions."],
+        "next": "oracle_additional_steps"
+      },
+      "hetzner": {
+        "description": "Create a new VPS instance on Hetzner Cloud",
+        "commands": [
+          "1. Go to https://console.hetzner.cloud/",
+          "2. Click 'Add Server'",
+          "3. Choose Location (closest to your users)",
+          "4. Select Image: Debian (recommended)",
+          "5. Choose Type: CX21 or higher (2GB RAM minimum)",
+          "6. Add SSH Key (paste the public key from previous step)",
+          "7. Set server name (e.g., 'my-app-server')",
+          "8. Click 'Create & Buy Now'",
+          "9. Wait for server creation (1-2 minutes)",
+          "10. Note the public IP address"
+        ],
+        "next": "server_update"
+      },
+      "aws": {
+        "description": "Launch a new EC2 instance on AWS",
+        "commands": [
+          "1. Go to https://console.aws.amazon.com/ec2/",
+          "2. Click 'Launch Instance'",
+          "3. Name: Enter instance name (e.g., 'my-app-server')",
+          "4. AMI: Select Debian 12 (search for 'debian' in Community AMIs)",
+          "5. Instance Type: t3.small or higher (2GB RAM minimum)",
+          "6. Key Pair: Create new key pair and paste your public key",
+          "7. Security Group: Create new with SSH (22), HTTP (80), HTTPS (443)",
+          "8. Storage: 20GB gp3 (minimum)",
+          "9. Click 'Launch Instance'",
+          "10. Wait for instance to be running (2-3 minutes)",
+          "11. Note the public IP address from instance details"
+        ],
+        "next": "server_update"
+      }
+    }
   },
   {
-    "id": "oracle_open_ports",
+    "id": "oracle_additional_steps",
     "type": "step",
-    "title": "Open Firewall Ports (Oracle Cloud)",
-    "description": "Configure firewall rules to open necessary ports for your application: https://www.youtube.com/watch?v=OwF_dNejz0A",
+    "title": "Configure Oracle Cloud Infrastructure",
+    "description": "Complete Oracle-specific configuration steps",
     "commands": [
-      "Watch the video for detailed instructions."
+      "# Follow these Oracle Cloud tutorials:",
+      "# 1. Reserve Public IP: https://www.youtube.com/watch?v=JcH7aiL2CfQ",
+      "# 2. Open Firewall Ports: https://www.youtube.com/watch?v=OwF_dNejz0A",
+      "# 3. Change Storage: https://www.youtube.com/watch?v=sv6xI8ga-ck"
     ],
-    "next": "oracle_change_storage"
+    "next": "server_update"
   },
   {
-    "id": "oracle_change_storage",
+    "id": "server_update",
     "type": "step",
-    "title": "Change Storage (Oracle Cloud)",
-    "description": "Adjust the storage size of your VPS instance: https://www.youtube.com/watch?v=sv6xI8ga-ck",
+    "title": "Update Server",
+    "description": "Connect to your VPS and update the system packages",
     "commands": [
-      "Watch the video for detailed instructions."
+      "ssh {{server_name}}",
+      "sudo apt update && sudo apt upgrade -y",
+      "sudo reboot"
     ],
-    "next": "common_ssh"
+    "next": "configure_ssh"
   },
   {
-    "id": "hetzner_vps_creation",
-    "type": "step",
-    "title": "Update packages on Ubuntu (Hetzner)",
-    "description": "Execute commands to update packages on Ubuntu.",
-    "commands": [
-      "sudo apt update",
-      "sudo apt upgrade -y"
-    ],
-    "next": "common_ssh"
-  },
-  {
-    "id": "aws_vps_creation",
-    "type": "step",
-    "title": "Update packages on CentOS (AWS)",
-    "description": "Execute commands to update packages on CentOS.",
-    "commands": [
-      "sudo yum update -y"
-    ],
-    "next": "common_ssh"
-  },
-  {
-    "id": "common_ssh",
+    "id": "configure_ssh",
     "type": "step",
     "title": "Configure SSH",
     "description": "Enable SSH access and adjust the port if necessary.",
