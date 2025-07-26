@@ -1,5 +1,13 @@
-[
-  {
+{
+  "id": "vps-setup",
+  "title": "VPS Setup & Configuration",
+  "description": "Complete workflow for setting up a VPS server across different cloud providers (Oracle, Hetzner, AWS)",
+  "category": "Infrastructure",
+  "version": "1.0.0",
+  "author": "Flow App",
+  "tags": ["vps", "server", "cloud", "infrastructure"],
+  "steps": [
+    {
     "id": "start",
     "type": "decision",
     "title": "Pick your Cloud Provider",
@@ -88,4 +96,5 @@
     "title": "Checklist completed",
     "description": "Your VPS is configured with the basics. Continue with additional customizations!"
   }
-]
+  ]
+}
