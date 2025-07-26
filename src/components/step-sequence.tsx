@@ -6,6 +6,7 @@ interface StepSequenceProps {
   steps: FlowStep[];
   currentStepId: string;
   completedSteps: Set<string>;
+  selectedContext?: string | null;
 }
 
 interface SequenceStep {
@@ -14,18 +15,32 @@ interface SequenceStep {
   status: 'completed' | 'current' | 'pending';
 }
 
-export default function StepSequence({ steps, currentStepId, completedSteps }: StepSequenceProps) {
-  // Create a logical sequence of steps for the checklist
+export default function StepSequence({ steps, currentStepId, completedSteps, selectedContext }: StepSequenceProps) {
+  // Create a logical sequence of steps for the checklist based on workflow structure
   const getSequenceSteps = (): SequenceStep[] => {
     const sequenceSteps: SequenceStep[] = [];
     
-    // Find decision steps and major action steps
-    const decisionSteps = steps.filter(step => step.type === 'decision');
-    const actionSteps = steps.filter(step => step.type === 'step');
+    // Filter steps that should appear in the checklist based on context
+    const checklistSteps = steps.filter(step => {
+      // Always include decisions and end steps
+      if (step.type === 'decision' || step.type === 'end') return true;
+      
+      // For regular steps, check if they should be included based on context
+      if (step.type === 'step') {
+        // Skip Oracle-specific steps if not Oracle context
+        if (step.id === 'oracle_additional_steps' && selectedContext !== 'oracle') {
+          return false;
+        }
+        return true;
+      }
+      
+      return false;
+    });
     
-    // Add decision steps first (these are choice points)
-    decisionSteps.forEach(step => {
+    // Add each step from the workflow
+    checklistSteps.forEach(step => {
       let status: 'completed' | 'current' | 'pending' = 'pending';
+      
       if (completedSteps.has(step.id)) {
         status = 'completed';
       } else if (step.id === currentStepId) {
@@ -38,43 +53,6 @@ export default function StepSequence({ steps, currentStepId, completedSteps }: S
         status
       });
     });
-    
-    // Add a generic "Configure Server" step representing all action steps
-    const hasConfigSteps = actionSteps.some(step => step.id !== 'end');
-    if (hasConfigSteps) {
-      const currentIsActionStep = actionSteps.some(step => step.id === currentStepId);
-      const hasCompletedActionSteps = actionSteps.some(step => completedSteps.has(step.id));
-      
-      let status: 'completed' | 'current' | 'pending' = 'pending';
-      if (currentStepId === 'end') {
-        status = 'completed';
-      } else if (currentIsActionStep) {
-        status = 'current';
-      } else if (hasCompletedActionSteps) {
-        status = 'current';
-      }
-      
-      sequenceSteps.push({
-        id: 'configure-server',
-        title: 'Configure Server',
-        status
-      });
-    }
-    
-    // Add final completion step
-    const endStep = steps.find(step => step.type === 'end');
-    if (endStep) {
-      let status: 'completed' | 'current' | 'pending' = 'pending';
-      if (currentStepId === endStep.id) {
-        status = 'completed';
-      }
-      
-      sequenceSteps.push({
-        id: endStep.id,
-        title: 'Review & Create',
-        status
-      });
-    }
     
     return sequenceSteps;
   };
