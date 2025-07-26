@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ArrowRight, Cloud, Server, CheckCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Cloud, Server, CheckCircle, Copy, Check } from "lucide-react";
 import StepSequence from "./step-sequence";
 import WorkflowInputComponent from "./workflow-input";
 
@@ -34,6 +34,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
   const [completedCommands, setCompletedCommands] = useState<Set<string>>(new Set());
   const [selectedContext, setSelectedContext] = useState<string | null>(null);
   const [variables, setVariables] = useState<Record<string, string>>({});
+  const [copiedCommands, setCopiedCommands] = useState<Set<string>>(new Set());
 
 
 
@@ -104,6 +105,23 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
       result = result.replace(regex, value || `{{${key}}}`);
     });
     return result;
+  }
+
+  async function copyCommand(command: string, commandKey: string) {
+    try {
+      await navigator.clipboard.writeText(substituteVariables(command));
+      setCopiedCommands(prev => new Set([...prev, commandKey]));
+      // Reset copy state after 2 seconds
+      setTimeout(() => {
+        setCopiedCommands(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(commandKey);
+          return newSet;
+        });
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy command:', err);
+    }
   }
 
   if (!currentStep) {
@@ -242,6 +260,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                             {commands.map((command, index) => {
                               const commandKey = `${currentId}-${index}`;
                               const isCompleted = completedCommands.has(commandKey);
+                              const isCopied = copiedCommands.has(commandKey);
                               return (
                                 <div key={index} className="bg-slate-950 text-slate-50 p-4 rounded-lg border border-slate-700 shadow-lg">
                                   <div className="flex items-start gap-3">
@@ -249,11 +268,22 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                                       type="checkbox"
                                       checked={isCompleted}
                                       onChange={() => toggleCommandCompletion(currentId, index)}
-                                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0"
                                     />
                                     <pre className={`text-sm font-mono leading-relaxed flex-1 overflow-x-auto whitespace-pre-wrap break-all ${isCompleted ? 'line-through opacity-60' : ''}`}>
                                       <code>{substituteVariables(command)}</code>
                                     </pre>
+                                    <button
+                                      onClick={() => copyCommand(command, commandKey)}
+                                      className="p-2 rounded-md bg-slate-800 hover:bg-slate-700 transition-colors border border-slate-600 hover:border-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 flex-shrink-0"
+                                      title={isCopied ? "Copied!" : "Copy command"}
+                                    >
+                                      {isCopied ? (
+                                        <Check className="w-4 h-4 text-green-400" />
+                                      ) : (
+                                        <Copy className="w-4 h-4 text-slate-300" />
+                                      )}
+                                    </button>
                                   </div>
                                 </div>
                               );
