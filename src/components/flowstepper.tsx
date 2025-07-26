@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, ArrowRight, Cloud, Server, CheckCircle } from "lucide-react";
 import StepSequence from "./step-sequence";
+import WorkflowInputComponent from "./workflow-input";
 
 // Definindo os tipos para os passos do fluxo
 interface FlowOption {
@@ -30,6 +31,9 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
   const [currentId, setCurrentId] = useState("start");
   const [history, setHistory] = useState<string[]>([]);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const [completedCommands, setCompletedCommands] = useState<Set<string>>(new Set());
+  const [selectedContext, setSelectedContext] = useState<string | null>(null);
+  const [variables, setVariables] = useState<Record<string, string>>({});
 
 
 
@@ -39,10 +43,20 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
   const totalSteps = relevantSteps.length;
   const currentStepIndex = relevantSteps.findIndex(step => step.id === currentId);
 
-  function navigateTo(nextId: string) {
-    // Mark current step as completed when navigating away (but not for decision steps)
-    if (currentStep && currentStep.type === 'step') {
+  function navigateTo(nextId: string, context?: string) {
+    // Mark current step as completed when navigating away (for both step and decision types)
+    if (currentStep && (currentStep.type === 'step' || currentStep.type === 'decision')) {
       setCompletedSteps(prev => new Set([...prev, currentId]));
+    }
+
+    // Set context if provided
+    if (context) {
+      setSelectedContext(context);
+      // Also store context as 'provider' variable for use in commands
+      setVariables(prev => ({
+        ...prev,
+        provider: context
+      }));
     }
 
     setHistory([...history, currentId]);
@@ -61,6 +75,35 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
       setHistory(history.slice(0, -1));
       setCurrentId(previousId);
     }
+  }
+
+  function toggleCommandCompletion(stepId: string, commandIndex: number) {
+    const commandKey = `${stepId}-${commandIndex}`;
+    setCompletedCommands(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(commandKey)) {
+        newSet.delete(commandKey);
+      } else {
+        newSet.add(commandKey);
+      }
+      return newSet;
+    });
+  }
+
+  function updateVariable(variableId: string, value: string) {
+    setVariables(prev => ({
+      ...prev,
+      [variableId]: value
+    }));
+  }
+
+  function substituteVariables(text: string): string {
+    let result = text;
+    Object.entries(variables).forEach(([key, value]) => {
+      const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+      result = result.replace(regex, value || `{{${key}}}`);
+    });
+    return result;
   }
 
   if (!currentStep) {
@@ -86,6 +129,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
             steps={flow}
             currentStepId={currentId}
             completedSteps={completedSteps}
+            selectedContext={selectedContext}
           />
         </div>
 
@@ -138,7 +182,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                         variant="outline"
                         size="lg"
                         className="w-full justify-between h-14 lg:h-16 text-left font-medium group hover:bg-primary/5 border-2 hover:border-primary/20 transition-all duration-200"
-                        onClick={() => navigateTo(option.next)}
+                        onClick={() => navigateTo(option.next, option.context)}
                       >
                         <div className="flex items-center gap-2 lg:gap-3">
                           <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-full bg-muted flex items-center justify-center text-xs lg:text-sm font-bold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
@@ -156,37 +200,70 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
 
             {currentStep.type === 'step' && (
               <div className="space-y-8 flex-1">
-                {currentStep.description && (
-                  <div className="prose prose-slate max-w-none">
-                    <p className="text-lg leading-relaxed text-foreground">{currentStep.description}</p>
-                  </div>
-                )}
-                {currentStep.commands && currentStep.commands.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <span className="w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm">$</span>
-                      Commands to execute
-                    </h3>
-                    <div className="bg-slate-950 text-slate-50 p-6 rounded-lg border border-slate-700 shadow-lg">
-                      <pre className="text-base font-mono overflow-x-auto leading-relaxed">
-                        <code>{currentStep.commands.join('\n')}</code>
-                      </pre>
-                    </div>
-                    <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                      <div className="flex items-start gap-3">
-                        <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-white text-xs">i</span>
+                {(() => {
+                  // Use variant if available and context is selected
+                  const variant = currentStep.variants && selectedContext && currentStep.variants[selectedContext];
+                  const description = variant?.description || currentStep.description;
+                  const commands = variant?.commands || currentStep.commands;
+                  const inputs = variant?.inputs || currentStep.inputs;
+                  
+                  return (
+                    <>
+                      {description && (
+                        <div className="prose prose-slate max-w-none">
+                          <p className="text-lg leading-relaxed text-foreground">{substituteVariables(description)}</p>
                         </div>
-                        <div>
-                          <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">Pro Tip</h4>
-                          <p className="text-sm text-blue-800 dark:text-blue-200">
-                            Copy and paste these commands into your terminal. Make sure you have the necessary permissions to execute them.
-                          </p>
+                      )}
+                      {inputs && inputs.length > 0 && (
+                        <div className="space-y-6">
+                          <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <span className="w-6 h-6 bg-blue-500/10 text-blue-600 rounded-full flex items-center justify-center text-sm">📝</span>
+                            Configuration
+                          </h3>
+                          <div className="grid gap-4 max-w-md">
+                            {inputs.map((input) => (
+                              <WorkflowInputComponent
+                                key={input.id}
+                                input={input}
+                                value={variables[input.id] || ''}
+                                onChange={(value) => updateVariable(input.id, value)}
+                              />
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                      )}
+                      {commands && commands.length > 0 && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <span className="w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-sm">$</span>
+                            Commands to execute
+                          </h3>
+                          <div className="space-y-3">
+                            {commands.map((command, index) => {
+                              const commandKey = `${currentId}-${index}`;
+                              const isCompleted = completedCommands.has(commandKey);
+                              return (
+                                <div key={index} className="bg-slate-950 text-slate-50 p-4 rounded-lg border border-slate-700 shadow-lg">
+                                  <div className="flex items-start gap-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={isCompleted}
+                                      onChange={() => toggleCommandCompletion(currentId, index)}
+                                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                                    />
+                                    <pre className={`text-sm font-mono leading-relaxed flex-1 overflow-x-auto whitespace-pre-wrap break-all ${isCompleted ? 'line-through opacity-60' : ''}`}>
+                                      <code>{substituteVariables(command)}</code>
+                                    </pre>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -216,7 +293,11 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
               </Button>
               {currentStep.type === 'step' && (
                 <Button
-                  onClick={() => currentStep.next && navigateTo(currentStep.next)}
+                  onClick={() => {
+                    const variant = currentStep.variants && selectedContext && currentStep.variants[selectedContext];
+                    const nextStep = variant?.next || currentStep.next;
+                    if (nextStep) navigateTo(nextStep);
+                  }}
                   size="lg"
                   className="gap-2 w-full lg:w-auto"
                 >
