@@ -42,3 +42,7 @@ The app helps users execute complex, multi-step workflows consistently by provid
 - `bun dev` - Start development server
 - `bun build` - Build for production
 - `bun preview` - Preview production build
+
+## Git Commit Guidelines
+
+- Never add anything related to claude in git commits
