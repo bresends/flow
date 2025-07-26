@@ -1,0 +1,91 @@
+[
+  {
+    "id": "start",
+    "type": "decision",
+    "title": "Pick your Cloud Provider",
+    "question": "Choose your Cloud Provider",
+    "options": [
+      { "label": "Oracle", "next": "oracle_instance_creation" },
+      { "label": "Hetzner", "next": "hetzner_vps_creation" },
+      { "label": "AWS", "next": "aws_vps_creation" }
+    ]
+  },
+  {
+    "id": "oracle_instance_creation",
+    "type": "step",
+    "title": "Create VPS Instance (Oracle Cloud)",
+    "description": "Follow this tutorial to create your VPS instance on Oracle Cloud: https://youtu.be/g7sP33QtuxM?si=yHVgbFAkeBMyAPr_",
+    "commands": [
+      "Watch the video for detailed instructions."
+    ],
+    "next": "oracle_reserve_ip"
+  },
+  {
+    "id": "oracle_reserve_ip",
+    "type": "step",
+    "title": "Reserve Public IP (Oracle Cloud)",
+    "description": "Reserve a public IP address for your VPS instance: https://www.youtube.com/watch?v=JcH7aiL2CfQ",
+    "commands": [
+      "Watch the video for detailed instructions."
+    ],
+    "next": "oracle_open_ports"
+  },
+  {
+    "id": "oracle_open_ports",
+    "type": "step",
+    "title": "Open Firewall Ports (Oracle Cloud)",
+    "description": "Configure firewall rules to open necessary ports for your application: https://www.youtube.com/watch?v=OwF_dNejz0A",
+    "commands": [
+      "Watch the video for detailed instructions."
+    ],
+    "next": "oracle_change_storage"
+  },
+  {
+    "id": "oracle_change_storage",
+    "type": "step",
+    "title": "Change Storage (Oracle Cloud)",
+    "description": "Adjust the storage size of your VPS instance: https://www.youtube.com/watch?v=sv6xI8ga-ck",
+    "commands": [
+      "Watch the video for detailed instructions."
+    ],
+    "next": "common_ssh"
+  },
+  {
+    "id": "hetzner_vps_creation",
+    "type": "step",
+    "title": "Update packages on Ubuntu (Hetzner)",
+    "description": "Execute commands to update packages on Ubuntu.",
+    "commands": [
+      "sudo apt update",
+      "sudo apt upgrade -y"
+    ],
+    "next": "common_ssh"
+  },
+  {
+    "id": "aws_vps_creation",
+    "type": "step",
+    "title": "Update packages on CentOS (AWS)",
+    "description": "Execute commands to update packages on CentOS.",
+    "commands": [
+      "sudo yum update -y"
+    ],
+    "next": "common_ssh"
+  },
+  {
+    "id": "common_ssh",
+    "type": "step",
+    "title": "Configure SSH",
+    "description": "Enable SSH access and adjust the port if necessary.",
+    "commands": [
+      "sudo systemctl enable ssh",
+      "sudo systemctl start ssh"
+    ],
+    "next": "end"
+  },
+  {
+    "id": "end",
+    "type": "end",
+    "title": "Checklist completed",
+    "description": "Your VPS is configured with the basics. Continue with additional customizations!"
+  }
+]
