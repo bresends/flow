@@ -1,0 +1,178 @@
+{
+  "id": "samba-setup",
+  "title": "Samba Server Setup",
+  "description": "Complete workflow for setting up a Samba file server for Windows/Linux file sharing",
+  "category": "File Sharing",
+  "version": "1.0.0",
+  "author": "Flow App",
+  "tags": ["samba", "file-sharing", "network"],
+  "steps": [
+    {
+      "id": "start",
+      "type": "step",
+      "title": "Install Samba",
+      "description": "Install Samba server and basic utilities",
+      "inputs": [
+        {
+          "id": "username",
+          "type": "text",
+          "label": "Username",
+          "placeholder": "e.g., bruno",
+          "required": true
+        },
+        {
+          "id": "share1_name",
+          "type": "text",
+          "label": "Share 1 Name",
+          "placeholder": "e.g., data",
+          "default": "data",
+          "required": true
+        },
+        {
+          "id": "share1_path",
+          "type": "text",
+          "label": "Share 1 Path",
+          "placeholder": "e.g., /data",
+          "default": "/data",
+          "required": true
+        },
+        {
+          "id": "share2_name",
+          "type": "text",
+          "label": "Share 2 Name",
+          "placeholder": "e.g., docker",
+          "default": "docker",
+          "required": true
+        },
+        {
+          "id": "share2_path",
+          "type": "text",
+          "label": "Share 2 Path",
+          "placeholder": "e.g., /docker",
+          "default": "/docker",
+          "required": true
+        }
+      ],
+      "commands": [
+        "# Update package list and install Samba",
+        "sudo apt update && sudo apt install -y samba",
+        "# Verify installation",
+        "samba --version"
+      ],
+      "next": "setup_directories"
+    },
+    {
+      "id": "setup_directories",
+      "type": "step",
+      "title": "Create Shared Directories",
+      "description": "Create directories that will be shared via Samba",
+      "commands": [
+        "# Create first share directory",
+        "sudo mkdir -p {{share1_path}}",
+        "# Create second share directory",
+        "sudo mkdir -p {{share2_path}}",
+        "# Set ownership to current user",
+        "sudo chown {{username}}:{{username}} {{share1_path}}",
+        "sudo chown {{username}}:{{username}} {{share2_path}}",
+        "# Set permissions",
+        "sudo chmod 755 {{share1_path}}",
+        "sudo chmod 755 {{share2_path}}",
+        "# Verify directories",
+        "ls -la {{share1_path}}",
+        "ls -la {{share2_path}}"
+      ],
+      "next": "setup_samba_user"
+    },
+    {
+      "id": "setup_samba_user",
+      "type": "step",
+      "title": "Setup Samba User",
+      "description": "Create Samba password for the user (use same password as system user for convenience)",
+      "commands": [
+        "# Add user to Samba (will prompt for password)",
+        "sudo smbpasswd -a {{username}}",
+        "# Enable the Samba user",
+        "sudo smbpasswd -e {{username}}",
+        "# Verify user was added",
+        "sudo pdbedit -L"
+      ],
+      "next": "configure_samba"
+    },
+    {
+      "id": "configure_samba",
+      "type": "step",
+      "title": "Configure Samba",
+      "description": "Backup original config and create custom Samba configuration",
+      "commands": [
+        "# Backup original configuration and add custom shares",
+        "sudo cp /etc/samba/smb.conf /etc/samba/smb.conf.backup",
+        "sudo tee -a /etc/samba/smb.conf > /dev/null << 'EOF'\n\n# {{share1_name}}\n[{{share1_name}}]\npath = {{share1_path}}\nvalid users = {{username}}\nread only = no\n\n# {{share2_name}}\n[{{share2_name}}]\npath = {{share2_path}}\nvalid users = {{username}}\nread only = no\nEOF"
+      ],
+      "next": "restart_samba"
+    },
+    {
+      "id": "restart_samba",
+      "type": "step",
+      "title": "Restart and Test Samba",
+      "description": "Restart Samba service and verify configuration",
+      "commands": [
+        "# Restart Samba services",
+        "sudo systemctl restart smbd",
+        "sudo systemctl restart nmbd",
+        "# Enable services to start on boot",
+        "sudo systemctl enable smbd",
+        "sudo systemctl enable nmbd",
+        "# Test configuration syntax",
+        "testparm",
+        "# Check service status",
+        "sudo systemctl status smbd",
+        "sudo systemctl status nmbd"
+      ],
+      "next": "setup_windows_discovery"
+    },
+    {
+      "id": "setup_windows_discovery",
+      "type": "step",
+      "title": "Setup Windows Auto Discovery",
+      "description": "Install and configure WSDD for Windows network discovery",
+      "commands": [
+        "# Install WSDD for Windows discovery",
+        "sudo apt install -y wsdd",
+        "# Start and enable WSDD service",
+        "sudo systemctl start wsdd",
+        "sudo systemctl enable wsdd",
+        "# Check WSDD status",
+        "sudo systemctl status wsdd",
+        "# Show server hostname for manual connection",
+        "echo \"Server hostname: $(hostname)\"",
+        "echo \"Manual connection: \\\\\\\\$(hostname)\"",
+        "echo \"Or use IP: \\\\\\\\$(hostname -I | awk '{print $1}')\""
+      ],
+      "next": "firewall_setup"
+    },
+    {
+      "id": "firewall_setup",
+      "type": "step",
+      "title": "Configure Firewall",
+      "description": "Open necessary ports for Samba file sharing",
+      "commands": [
+        "# Allow Samba through firewall",
+        "sudo ufw allow samba",
+        "# Or manually open specific ports if needed:",
+        "# sudo ufw allow 137/udp",
+        "# sudo ufw allow 138/udp",
+        "# sudo ufw allow 139/tcp",
+        "# sudo ufw allow 445/tcp",
+        "# Check firewall status",
+        "sudo ufw status"
+      ],
+      "next": "end"
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "title": "Samba Setup Complete",
+      "description": "Your Samba server is now configured and ready to use. You can access it from Windows via \\\\hostname or \\\\ip-address"
+    }
+  ]
+}

@@ -1,12 +1,13 @@
-import * as React from "react"
-import { GalleryVerticalEnd, Minus, Plus } from "lucide-react"
+import * as React from "react";
+import { useState } from "react";
+import { GalleryVerticalEnd, Minus, Plus, Workflow } from "lucide-react";
 
-import { SearchForm } from "@/components/search-form"
+import { SearchForm } from "@/components/search-form";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -19,150 +20,31 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+import { getFlowsByCategory, searchFlows } from "@/utils/flowLoader";
 
-// This is sample data.
-const data = {
-  navMain: [
-    {
-      title: "Getting Started",
-      url: "#",
-      items: [
-        {
-          title: "Installation",
-          url: "#",
-        },
-        {
-          title: "Project Structure",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Building Your Application",
-      url: "#",
-      items: [
-        {
-          title: "Routing",
-          url: "#",
-        },
-        {
-          title: "Data Fetching",
-          url: "#",
-          isActive: true,
-        },
-        {
-          title: "Rendering",
-          url: "#",
-        },
-        {
-          title: "Caching",
-          url: "#",
-        },
-        {
-          title: "Styling",
-          url: "#",
-        },
-        {
-          title: "Optimizing",
-          url: "#",
-        },
-        {
-          title: "Configuring",
-          url: "#",
-        },
-        {
-          title: "Testing",
-          url: "#",
-        },
-        {
-          title: "Authentication",
-          url: "#",
-        },
-        {
-          title: "Deploying",
-          url: "#",
-        },
-        {
-          title: "Upgrading",
-          url: "#",
-        },
-        {
-          title: "Examples",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "API Reference",
-      url: "#",
-      items: [
-        {
-          title: "Components",
-          url: "#",
-        },
-        {
-          title: "File Conventions",
-          url: "#",
-        },
-        {
-          title: "Functions",
-          url: "#",
-        },
-        {
-          title: "next.config.js Options",
-          url: "#",
-        },
-        {
-          title: "CLI",
-          url: "#",
-        },
-        {
-          title: "Edge Runtime",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Architecture",
-      url: "#",
-      items: [
-        {
-          title: "Accessibility",
-          url: "#",
-        },
-        {
-          title: "Fast Refresh",
-          url: "#",
-        },
-        {
-          title: "Next.js Compiler",
-          url: "#",
-        },
-        {
-          title: "Supported Browsers",
-          url: "#",
-        },
-        {
-          title: "Turbopack",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Community",
-      url: "#",
-      items: [
-        {
-          title: "Contribution Guide",
-          url: "#",
-        },
-      ],
-    },
-  ],
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  selectedFlowId?: string;
+  onFlowSelect?: (flowId: string) => void;
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  selectedFlowId,
+  onFlowSelect,
+  ...props
+}: AppSidebarProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const flowsByCategory = getFlowsByCategory();
+  const searchResults = searchQuery ? searchFlows(searchQuery) : [];
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+  };
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -171,58 +53,105 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton size="lg" asChild>
               <a href="#">
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <GalleryVerticalEnd className="size-4" />
+                  <Workflow className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-medium">Documentation</span>
+                  <span className="font-medium">Flow</span>
                   <span className="">v1.0.0</span>
                 </div>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <SearchForm />
+        <SearchForm onSearch={handleSearch} onClear={handleClearSearch} />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {data.navMain.map((item, index) => (
-              <Collapsible
-                key={item.title}
-                defaultOpen={index === 1}
-                className="group/collapsible"
-              >
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
-                      {item.title}{" "}
-                      <Plus className="ml-auto group-data-[state=open]/collapsible:hidden" />
-                      <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden" />
+            {searchQuery ? (
+              // Show search results
+              <>
+                {searchResults.length > 0 ? (
+                  <>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton disabled className="mb-2">
+                        Search Results ({searchResults.length})
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    {searchResults.map((flow) => (
+                      <SidebarMenuItem key={flow.id}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={selectedFlowId === flow.id}
+                        >
+                          <button
+                            onClick={() => onFlowSelect?.(flow.id)}
+                            className="w-full text-left justify-between"
+                            title={flow.description}
+                          >
+                            <span>{flow.title}</span>
+                            {flow.category && (
+                              <span className="text-xs text-muted-foreground">
+                                {flow.category}
+                              </span>
+                            )}
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </>
+                ) : (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton disabled>
+                      No workflows found for "{searchQuery}"
                     </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  {item.items?.length ? (
+                  </SidebarMenuItem>
+                )}
+              </>
+            ) : (
+              // Show categories
+              Object.entries(flowsByCategory).map(([category, flows]) => (
+                <Collapsible
+                  key={category}
+                  defaultOpen={true}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton>
+                        {category}{" "}
+                        <Plus className="ml-auto group-data-[state=open]/collapsible:hidden" />
+                        <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {item.items.map((item) => (
-                          <SidebarMenuSubItem key={item.title}>
+                        {flows.map((flow) => (
+                          <SidebarMenuSubItem key={flow.id}>
                             <SidebarMenuSubButton
                               asChild
-                              isActive={item.isActive}
+                              isActive={selectedFlowId === flow.id}
                             >
-                              <a href={item.url}>{item.title}</a>
+                              <button
+                                onClick={() => onFlowSelect?.(flow.id)}
+                                className="w-full text-left"
+                                title={flow.description}
+                              >
+                                {flow.title}
+                              </button>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
                       </SidebarMenuSub>
                     </CollapsibleContent>
-                  ) : null}
-                </SidebarMenuItem>
-              </Collapsible>
-            ))}
+                  </SidebarMenuItem>
+                </Collapsible>
+              ))
+            )}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

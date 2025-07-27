@@ -1,0 +1,361 @@
+{
+  "id": "vps-setup",
+  "title": "VPS Setup & Configuration",
+  "description": "Complete workflow for setting up a VPS server across different cloud providers",
+  "category": "Infrastructure",
+  "version": "1.0.0",
+  "author": "Flow App",
+  "tags": ["server", "cloud", "infrastructure"],
+  "steps": [
+    {
+    "id": "start",
+    "type": "decision",
+    "title": "Pick your Cloud Provider",
+    "question": "Choose your Cloud Provider",
+    "options": [
+      { "label": "Oracle", "next": "ssh_generation", "context": "oracle" },
+      { "label": "Hetzner", "next": "ssh_generation", "context": "hetzner" },
+      { "label": "AWS", "next": "ssh_generation", "context": "aws" }
+    ]
+  },
+  {
+    "id": "ssh_generation",
+    "type": "step",
+    "title": "Generate SSH Key Pair",
+    "description": "Generate a named SSH key pair for your VPS server",
+    "inputs": [
+      {
+        "id": "server_name",
+        "type": "text",
+        "label": "Server Name",
+        "placeholder": "e.g., user-ampere-sp-alpha",
+        "required": true
+      },
+      {
+        "id": "username",
+        "type": "text",
+        "label": "Username",
+        "placeholder": "e.g., bruno",
+        "required": true
+      },
+      {
+        "id": "memory_mb",
+        "type": "text",
+        "label": "Server Memory (MB)",
+        "placeholder": "e.g., 2048 for 2GB, 1024 for 1GB",
+        "default": "1024",
+        "required": true
+      },
+      {
+        "id": "gotify_url",
+        "type": "text",
+        "label": "Gotify URL",
+        "placeholder": "e.g., https://gotify.example.com/message",
+        "default": "https://gotify.cbmgo.org/message",
+        "required": true
+      },
+      {
+        "id": "gotify_token",
+        "type": "text",
+        "label": "Gotify Token",
+        "placeholder": "e.g., Az1QNXjN4gJW4yb",
+        "required": true
+      }
+    ],
+    "commands": [
+      "mkdir -p ~/.ssh/{{provider}}",
+      "ssh-keygen -t ed25519 -f ~/.ssh/{{provider}}/{{server_name}} -C \"{{server_name}}-$(date +%Y%m%d)-$(whoami)\"",
+      "cat ~/.ssh/{{provider}}/{{server_name}}.pub",
+      "# Copy the public key output above for server setup",
+      "# Add to SSH config file:",
+      "echo -e \"Host {{server_name}}\\n  HostName YOUR_SERVER_IP\\n  User root\\n  IdentityFile ~/.ssh/{{provider}}/{{server_name}}\" >> ~/.ssh/config"
+    ],
+    "next": "create_instance"
+  },
+  {
+    "id": "create_instance",
+    "type": "step",
+    "title": "Create VPS Instance",
+    "description": "Create your VPS instance on the selected cloud provider",
+    "variants": {
+      "oracle": {
+        "description": "Follow this tutorial to create your VPS instance on Oracle Cloud: https://youtu.be/g7sP33QtuxM?si=yHVgbFAkeBMyAPr_",
+        "commands": ["Watch the video for detailed instructions."],
+        "next": "oracle_reserve_ip"
+      },
+      "hetzner": {
+        "description": "Create a new VPS instance on Hetzner Cloud",
+        "commands": [
+          "1. Go to https://console.hetzner.cloud/",
+          "2. Click 'Add Server'",
+          "3. Choose Location (closest to your users)",
+          "4. Select Image: Debian (recommended)",
+          "5. Choose Type: CX21 or higher (2GB RAM minimum)",
+          "6. Add SSH Key (paste the public key from previous step)",
+          "7. Set server name (e.g., 'my-app-server')",
+          "8. Note the public IP address"
+        ],
+        "next": "hetzner_setup_firewall"
+      },
+      "aws": {
+        "description": "Launch a new EC2 instance on AWS",
+        "commands": [
+          "1. Go to https://console.aws.amazon.com/ec2/",
+          "2. Click 'Launch Instance'",
+          "3. Name: Enter instance name (e.g., 'my-app-server')",
+          "4. AMI: Select Debian 12 (search for 'debian' in Community AMIs)",
+          "5. Instance Type: t3.small or higher (2GB RAM minimum)",
+          "6. Key Pair: Create new key pair and paste your public key",
+          "7. Security Group: Create new with SSH (22), HTTP (80), HTTPS (443)",
+          "8. Storage: 20GB gp3 (minimum)",
+          "9. Click 'Launch Instance'",
+          "10. Wait for instance to be running (2-3 minutes)",
+          "11. Note the public IP address from instance details"
+        ],
+        "next": "aws_reserve_ip"
+      }
+    }
+  },
+  {
+    "id": "oracle_reserve_ip",
+    "type": "step",
+    "title": "Reserve Public IP (Oracle)",
+    "description": "Reserve a static public IP address for your Oracle Cloud instance",
+    "commands": [
+      "# Follow this Oracle Cloud tutorial:",
+      "# Reserve Public IP: https://www.youtube.com/watch?v=JcH7aiL2CfQ"
+    ],
+    "next": "oracle_setup_firewall"
+  },
+  {
+    "id": "oracle_setup_firewall",
+    "type": "step",
+    "title": "Setup Firewall (Oracle)",
+    "description": "Configure firewall rules to open necessary ports",
+    "commands": [
+      "# Follow this Oracle Cloud tutorial:",
+      "# Open Firewall Ports: https://www.youtube.com/watch?v=OwF_dNejz0A"
+    ],
+    "next": "server_update"
+  },
+  {
+    "id": "aws_reserve_ip",
+    "type": "step",
+    "title": "Reserve Elastic IP (AWS)",
+    "description": "Allocate and associate an Elastic IP to your EC2 instance",
+    "commands": [
+      "1. Go to https://console.aws.amazon.com/ec2/",
+      "2. In the left navigation, click 'Elastic IPs' under 'Network & Security'",
+      "3. Click 'Allocate Elastic IP address'",
+      "4. Choose 'Amazon's pool of IPv4 addresses'",
+      "5. Click 'Allocate'",
+      "6. Select the newly created Elastic IP",
+      "7. Click 'Actions' > 'Associate Elastic IP address'",
+      "8. Select your instance from the dropdown",
+      "9. Click 'Associate'",
+      "10. Note the new static IP address"
+    ],
+    "next": "aws_setup_firewall"
+  },
+  {
+    "id": "aws_setup_firewall",
+    "type": "step",
+    "title": "Setup Security Groups (AWS)",
+    "description": "Configure security group rules to allow necessary traffic",
+    "commands": [
+      "1. Go to https://console.aws.amazon.com/ec2/",
+      "2. Click 'Security Groups' in the left navigation",
+      "3. Select your instance's security group",
+      "4. Click 'Inbound rules' tab",
+      "5. Click 'Edit inbound rules'",
+      "6. Ensure these rules exist:",
+      "   - SSH (22) from your IP",
+      "   - HTTP (80) from anywhere (0.0.0.0/0)",
+      "   - HTTPS (443) from anywhere (0.0.0.0/0)",
+      "7. Click 'Save rules'"
+    ],
+    "next": "server_update"
+  },
+  {
+    "id": "hetzner_setup_firewall",
+    "type": "step",
+    "title": "Setup Firewall (Hetzner)",
+    "description": "Configure firewall rules for your Hetzner server",
+    "commands": [
+      "1. Go to https://console.hetzner.cloud/",
+      "2. Select your project",
+      "3. Click 'Firewalls' in the left menu",
+      "4. Click 'Create Firewall'",
+      "5. Name: e.g., 'web-server-firewall'",
+      "6. Add these inbound rules:",
+      "   - SSH: Port 22, Source: Your IP",
+      "   - HTTP: Port 80, Source: Any IPv4",
+      "   - HTTPS: Port 443, Source: Any IPv4",
+      "7. Click 'Create Firewall'",
+      "8. Go to 'Servers' and select your server",
+      "9. Click 'Firewalls' tab",
+      "10. Click 'Apply Firewall' and select your firewall"
+    ],
+    "next": "server_update"
+  },
+  {
+    "id": "server_update",
+    "type": "step",
+    "title": "Update Server",
+    "description": "Connect to your VPS and update the system packages",
+    "commands": [
+      "ssh {{server_name}}",
+      "sudo apt update && sudo apt upgrade -y",
+      "sudo reboot"
+    ],
+    "next": "setup_non_root_user"
+  },
+  {
+    "id": "setup_non_root_user",
+    "type": "step",
+    "title": "Setup Non-Root User",
+    "description": "Create a new user with sudo privileges and copy SSH key for seamless access",
+    "commands": [
+      "ssh {{server_name}}",
+      "adduser {{username}}",
+      "usermod -aG sudo {{username}}",
+      "sudo mkdir -p /home/{{username}}/.ssh",
+      "sudo cp ~/.ssh/authorized_keys /home/{{username}}/.ssh/",
+      "sudo chown -R {{username}}:{{username}} /home/{{username}}/.ssh",
+      "sudo chmod 700 /home/{{username}}/.ssh",
+      "sudo chmod 600 /home/{{username}}/.ssh/authorized_keys",
+      "su {{username}}"
+    ],
+    "next": "disable_root_login"
+  },
+  {
+    "id": "disable_root_login",
+    "type": "step",
+    "title": "Disable Root Login",
+    "description": "Change root password and disable root shell login",
+    "commands": [
+      "# Change root password for emergency console access",
+      "sudo passwd root",
+      "# Disable root login by changing shell to nologin",
+      "sudo vim /etc/passwd",
+      "# Change the root line to: root:x:0:0:root:/root:/bin/nologin"
+    ],
+    "next": "configure_ssh"
+  },
+  {
+    "id": "configure_ssh",
+    "type": "step",
+    "title": "Configure SSH",
+    "description": "Harden SSH security: disable password authentication, root login, and configure keepalive",
+    "commands": [
+      "# Backup original SSH config",
+      "sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup",
+      "# Remove cloud-init SSH config that may override our settings",
+      "sudo rm -f /etc/ssh/sshd_config.d/50-cloud-init.conf",
+      "# Edit SSH configuration manually",
+      "sudo vim /etc/ssh/sshd_config",
+      "# Add/modify these settings:",
+      "# PasswordAuthentication no",
+      "# PermitRootLogin no",
+      "# ClientAliveInterval 180",
+      "# ClientAliveCountMax 3",
+      "# Test SSH configuration validity",
+      "sudo sshd -t",
+      "# Restart SSH service to apply changes",
+      "sudo systemctl restart sshd",
+      "# Verify SSH service is running",
+      "sudo systemctl status sshd"
+    ],
+    "next": "enable_automatic_updates"
+  },
+  {
+    "id": "enable_automatic_updates",
+    "type": "step",
+    "title": "Enable Automatic Updates",
+    "description": "Configure automatic security updates and package change notifications",
+    "commands": [
+      "# Install and configure unattended-upgrades for automatic updates",
+      "sudo apt install -y unattended-upgrades",
+      "sudo dpkg-reconfigure unattended-upgrades",
+      "sudo apt install -y apt-listchanges"
+    ],
+    "next": "setup_swap"
+  },
+  {
+    "id": "setup_swap",
+    "type": "step",
+    "title": "Setup Swap",
+    "description": "Create and configure swap file based on server memory (< 2GB = Memory x2, 2-8GB = Memory x1, > 8GB = Memory x0.5)",
+    "commands": [
+      "# Calculate swap size based on memory: {{memory_mb}}MB",
+      "MEMORY={{memory_mb}}",
+      "if [ $MEMORY -lt 2048 ]; then SWAP_SIZE=$((MEMORY * 2)); elif [ $MEMORY -le 8192 ]; then SWAP_SIZE=$MEMORY; else SWAP_SIZE=$((MEMORY / 2)); fi",
+      "echo \"Creating ${SWAP_SIZE}MB swap file for ${MEMORY}MB RAM\"",
+      "sudo fallocate -l ${SWAP_SIZE}M /swapfile",
+      "sudo chmod 600 /swapfile",
+      "sudo mkswap /swapfile",
+      "sudo swapon /swapfile",
+      "# Make swap persistent across reboots",
+      "echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab",
+      "# Verify swap is active",
+      "sudo swapon --show",
+      "free -h"
+    ],
+    "next": "setup_crowdsec"
+  },
+  {
+    "id": "setup_crowdsec",
+    "type": "step",
+    "title": "Setup CrowdSec (Learn more!)",
+    "description": "Install and configure CrowdSec for intrusion detection and prevention",
+    "commands": [
+      "# Check current login attempts before installing CrowdSec",
+      "sudo tail -n 10 -f /var/log/auth.log",
+      "# Press Ctrl+C to stop viewing logs",
+      "# TODO: Install CrowdSec",
+      "# curl -s https://install.crowdsec.net | sudo sh",
+      "# TODO: Configure CrowdSec collections and scenarios",
+      "# TODO: Setup CrowdSec firewall bouncer",
+      "# For now, this is a placeholder - CrowdSec installation will be added later",
+      "echo 'CrowdSec setup placeholder - implementation coming soon'"
+    ],
+    "next": "setup_ssh_notifications"
+  },
+  {
+    "id": "setup_ssh_notifications",
+    "type": "step",
+    "title": "Setup SSH Login Notifications",
+    "description": "Configure SSH login alerts via Gotify notifications",
+    "commands": [
+      "# Create SSH login alert script and configure PAM",
+      "sudo tee /usr/bin/ssh-login-alert.sh > /dev/null << 'EOF'\n#!/bin/bash\n\n# Configuration\nGOTIFY_URL=\"{{gotify_url}}\"\nGOTIFY_TOKEN=\"{{gotify_token}}\"\n\n# Function to send Gotify notification\nsend_gotify_notification() {\n    local title=\"$1\"\n    local message=\"$2\"\n    local priority=\"${3:-5}\"\n\n    curl -s -X POST \"$GOTIFY_URL\" \\\n        -H \"X-Gotify-Key: $GOTIFY_TOKEN\" \\\n        -F \"title=$title\" \\\n        -F \"message=$message\" \\\n        -F \"priority=$priority\"\n}\n\n# Only execute on session open\nif [ \"${PAM_TYPE}\" = \"open_session\" ]; then\n    # Gather system information\n    HOSTNAME=$(hostname)\n    PUBLIC_IP=$(curl -4 -s ifconfig.me)\n    DATE=$(date '+%Y-%m-%d %H:%M:%S')\n\n    # Create notification message\n    TITLE=\"SSH Login Alert - $HOSTNAME\"\n    MESSAGE=\"New SSH login detected:\nUser: ${PAM_USER}\nAccessed Machine Public IP: ${PUBLIC_IP}\nFrom: ${PAM_RHOST}\nTime: ${DATE}\"\n\n    # Send notification with high priority (8)\n    send_gotify_notification \"$TITLE\" \"$MESSAGE\" 8\nfi\n\nexit 0\nEOF",
+      "sudo chmod +x /usr/bin/ssh-login-alert.sh",
+      "sudo chown root:root /usr/bin/ssh-login-alert.sh",
+      "echo 'session optional pam_exec.so /usr/bin/ssh-login-alert.sh' | sudo tee -a /etc/pam.d/sshd",
+      "echo 'SSH login notifications configured. Test by opening a new SSH session.'"
+    ],
+    "next": "setup_monitoring"
+  },
+  {
+    "id": "setup_monitoring",
+    "type": "step",
+    "title": "Setup Monitoring (Prometheus)",
+    "description": "Install and configure Prometheus for server monitoring",
+    "commands": [
+      "# TODO: Install Prometheus",
+      "# TODO: Configure node_exporter for system metrics",
+      "# TODO: Setup Grafana dashboard",
+      "# TODO: Configure alerting rules",
+      "# For now, this is a placeholder - Prometheus setup will be added later",
+      "echo 'Prometheus monitoring setup placeholder - implementation coming soon'"
+    ],
+    "next": "end"
+  },
+  {
+    "id": "end",
+    "type": "end",
+    "title": "Checklist completed",
+    "description": "Your VPS is configured with the basics. Continue with additional customizations!"
+  }
+  ]
+}
