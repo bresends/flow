@@ -27,8 +27,14 @@ export default function StepSequence({ steps, currentStepId, completedSteps, sel
       
       // For regular steps, check if they should be included based on context
       if (step.type === 'step') {
-        // Skip Oracle-specific steps if not Oracle context
-        if (step.id === 'oracle_additional_steps' && selectedContext !== 'oracle') {
+        // Skip provider-specific steps if not matching context
+        if (step.id.startsWith('oracle_') && selectedContext !== 'oracle') {
+          return false;
+        }
+        if (step.id.startsWith('aws_') && selectedContext !== 'aws') {
+          return false;
+        }
+        if (step.id.startsWith('hetzner_') && selectedContext !== 'hetzner') {
           return false;
         }
         return true;
