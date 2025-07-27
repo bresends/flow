@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState } from "react";
-import { GalleryVerticalEnd, Minus, Plus, Workflow } from "lucide-react";
+import { Minus, Plus, Workflow } from "lucide-react";
 
 import { SearchForm } from "@/components/search-form";
 import {

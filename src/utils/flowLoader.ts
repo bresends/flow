@@ -5,7 +5,7 @@ const flowModules = import.meta.glob('../../flows/*.json', { eager: true });
 
 // Build registry from imported modules
 const flowRegistry: Record<string, FlowFile> = {};
-Object.entries(flowModules).forEach(([path, module]) => {
+Object.entries(flowModules).forEach(([, module]) => {
   const flow = (module as any).default as FlowFile;
   flowRegistry[flow.id] = flow;
 });

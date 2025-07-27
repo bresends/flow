@@ -266,7 +266,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                               <Cog /> Configuration
                             </h3>
                             <div className="grid gap-4">
-                              {inputs.map((input) => {
+                              {inputs.map((input: any) => {
                                 // Initialize with default value if not set
                                 const currentValue = variables[input.id] || input.default || "";
                                 if (!variables[input.id] && input.default) {
@@ -295,7 +295,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                               Commands to execute
                             </h3>
                             <div className="space-y-3">
-                              {commands.map((command, index) => {
+                              {commands.map((command: any, index: number) => {
                                 const commandKey = `${currentId}-${index}`;
                                 const isCompleted =
                                   completedCommands.has(commandKey);
