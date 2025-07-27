@@ -266,16 +266,23 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                               <Cog /> Configuration
                             </h3>
                             <div className="grid gap-4">
-                              {inputs.map((input) => (
-                                <WorkflowInputComponent
-                                  key={input.id}
-                                  input={input}
-                                  value={variables[input.id] || ""}
-                                  onChange={(value) =>
-                                    updateVariable(input.id, value)
-                                  }
-                                />
-                              ))}
+                              {inputs.map((input) => {
+                                // Initialize with default value if not set
+                                const currentValue = variables[input.id] || input.default || "";
+                                if (!variables[input.id] && input.default) {
+                                  updateVariable(input.id, input.default);
+                                }
+                                return (
+                                  <WorkflowInputComponent
+                                    key={input.id}
+                                    input={input}
+                                    value={currentValue}
+                                    onChange={(value) =>
+                                      updateVariable(input.id, value)
+                                    }
+                                  />
+                                );
+                              })}
                             </div>
                           </div>
                         )}
@@ -296,9 +303,24 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                                 return (
                                   <div
                                     key={index}
-                                    className="bg-slate-950 text-slate-50 p-4 rounded-[.5rem] border border-slate-700 shadow-lg"
+                                    className="bg-slate-950 text-slate-50 p-4 rounded-[.5rem] border border-slate-700 shadow-lg relative"
                                   >
-                                    <div className="flex items-center gap-3">
+                                    <button
+                                      onClick={() =>
+                                        copyCommand(command, commandKey)
+                                      }
+                                      className={`absolute top-2 right-2 p-2 transition-transform duration-75 active:scale-90 hover:scale-110 text-slate-300 hover:text-white z-10`}
+                                      title={
+                                        isCopied ? "Copied!" : "Copy command"
+                                      }
+                                    >
+                                      {isCopied ? (
+                                        <ClipboardCheck className="w-4 h-4" />
+                                      ) : (
+                                        <Clipboard className="w-4 h-4" />
+                                      )}
+                                    </button>
+                                    <div className="flex items-start gap-3 pr-10">
                                       <input
                                         type="checkbox"
                                         checked={isCompleted}
@@ -321,21 +343,6 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                                           {substituteVariables(command)}
                                         </code>
                                       </pre>
-                                      <button
-                                        onClick={() =>
-                                          copyCommand(command, commandKey)
-                                        }
-                                        className={`p-2 flex-shrink-0 transition-transform duration-75 active:scale-90 hover:scale-110 text-slate-300`}
-                                        title={
-                                          isCopied ? "Copied!" : "Copy command"
-                                        }
-                                      >
-                                        {isCopied ? (
-                                          <ClipboardCheck className="w-4 h-4" />
-                                        ) : (
-                                          <Clipboard className="w-4 h-4" />
-                                        )}
-                                      </button>
                                     </div>
                                   </div>
                                 );
