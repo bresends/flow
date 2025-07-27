@@ -1,13 +1,14 @@
 import type { FlowFile, Flow, FlowMetadata } from '@/types/flow';
 
-// Static flow imports - we'll need to manually import each flow file
-// This is necessary because Vite doesn't support dynamic imports of unknown files at build time
-import vpsFlow from '../../flows/vps.json';
+// Automatically import all flow files using Vite's glob import
+const flowModules = import.meta.glob('../../flows/*.json', { eager: true });
 
-// Registry of available flows
-const flowRegistry: Record<string, FlowFile> = {
-  'vps-setup': vpsFlow as FlowFile,
-};
+// Build registry from imported modules
+const flowRegistry: Record<string, FlowFile> = {};
+Object.entries(flowModules).forEach(([path, module]) => {
+  const flow = (module as any).default as FlowFile;
+  flowRegistry[flow.id] = flow;
+});
 
 /**
  * Get all available flows with their metadata
