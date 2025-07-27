@@ -19,12 +19,12 @@ export default function StepSequence({ steps, currentStepId, completedSteps, sel
   // Create a logical sequence of steps for the checklist based on workflow structure
   const getSequenceSteps = (): SequenceStep[] => {
     const sequenceSteps: SequenceStep[] = [];
-    
+
     // Filter steps that should appear in the checklist based on context
     const checklistSteps = steps.filter(step => {
       // Always include decisions and end steps
       if (step.type === 'decision' || step.type === 'end') return true;
-      
+
       // For regular steps, check if they should be included based on context
       if (step.type === 'step') {
         // Skip provider-specific steps if not matching context
@@ -39,27 +39,27 @@ export default function StepSequence({ steps, currentStepId, completedSteps, sel
         }
         return true;
       }
-      
+
       return false;
     });
-    
+
     // Add each step from the workflow
     checklistSteps.forEach(step => {
       let status: 'completed' | 'current' | 'pending' = 'pending';
-      
+
       if (completedSteps.has(step.id)) {
         status = 'completed';
       } else if (step.id === currentStepId) {
         status = 'current';
       }
-      
+
       sequenceSteps.push({
         id: step.id,
         title: step.title,
         status
       });
     });
-    
+
     return sequenceSteps;
   };
 
@@ -71,7 +71,7 @@ export default function StepSequence({ steps, currentStepId, completedSteps, sel
         <CardTitle className="text-lg">Checklist</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {sequenceSteps.map((step, index) => (
+        {sequenceSteps.map((step) => (
           <div key={step.id} className="flex items-center space-x-3">
             <div className="flex-shrink-0">
               {step.status === 'completed' ? (
@@ -86,10 +86,10 @@ export default function StepSequence({ steps, currentStepId, completedSteps, sel
                 <Circle className="w-6 h-6 text-gray-300" />
               )}
             </div>
-            <span 
+            <span
               className={`text-sm font-medium ${
-                step.status === 'completed' 
-                  ? 'text-foreground' 
+                step.status === 'completed'
+                  ? 'text-foreground'
                   : step.status === 'current'
                   ? 'text-blue-600'
                   : 'text-muted-foreground'

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 
 import FlowStepper from "./components/flowstepper";
-import { getFlowById, getAvailableFlows } from "@/utils/flowLoader";
+import { getFlowById } from "@/utils/flowLoader";
 import { type Flow } from "@/types/flow";
 
 export function App() {

@@ -12,23 +12,7 @@ import {
 import { useState } from "react";
 import StepSequence from "./step-sequence";
 import WorkflowInputComponent from "./workflow-input";
-
-// Definindo os tipos para os passos do fluxo
-interface FlowOption {
-  label: string;
-  next: string;
-}
-
-interface FlowStep {
-  id: string;
-  type: "decision" | "step" | "end";
-  title: string;
-  question?: string;
-  description?: string;
-  options?: FlowOption[];
-  commands?: string[];
-  next?: string;
-}
+import { type FlowStep } from "@/types/flow";
 
 interface FlowStepperProps {
   flow: FlowStep[];
@@ -245,7 +229,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                     const variant =
                       currentStep.variants &&
                       selectedContext &&
-                      currentStep.variants[selectedContext];
+                      currentStep.variants[selectedContext] || null;
                     const description =
                       variant?.description || currentStep.description;
                     const commands = variant?.commands || currentStep.commands;
@@ -266,7 +250,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                               <Cog /> Configuration
                             </h3>
                             <div className="grid gap-4">
-                              {inputs.map((input) => {
+                              {inputs.map((input: any) => {
                                 // Initialize with default value if not set
                                 const currentValue = variables[input.id] || input.default || "";
                                 if (!variables[input.id] && input.default) {
@@ -295,7 +279,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                               Commands to execute
                             </h3>
                             <div className="space-y-3">
-                              {commands.map((command, index) => {
+                              {commands.map((command: any, index: number) => {
                                 const commandKey = `${currentId}-${index}`;
                                 const isCompleted =
                                   completedCommands.has(commandKey);
@@ -390,7 +374,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
                       const variant =
                         currentStep.variants &&
                         selectedContext &&
-                        currentStep.variants[selectedContext];
+                        currentStep.variants[selectedContext] || null;
                       const nextStep = variant?.next || currentStep.next;
                       if (nextStep) navigateTo(nextStep);
                     }}
