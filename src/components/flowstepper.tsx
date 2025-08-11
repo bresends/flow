@@ -154,7 +154,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
 				<div className="flex-1 min-w-0">
 					<div className="bg-card border rounded-lg">
 						{/* Header */}
-						<div className="border-b bg-card px-4 py-6 lg:px-8 lg:py-8">
+						<div className="px-4 py-6 lg:px-8 lg:py-8">
 							<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 								<div className="flex-1">
 									<div className="flex items-center gap-3 mb-3">
@@ -332,7 +332,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
 																						index,
 																					)
 																				}
-																				className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0"
+																				className="mt-1 w-4 h-4 text-accent bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0"
 																			/>
 																			<pre
 																				className={`text-sm font-mono leading-relaxed flex-1 overflow-x-auto whitespace-pre-wrap break-all ${
@@ -374,7 +374,7 @@ export default function FlowStepper({ flow }: FlowStepperProps) {
 						</div>
 
 						{/* Footer */}
-						<div className="border-t bg-card px-4 py-4 lg:px-8">
+						<div className="px-4 py-4 lg:px-8">
 							<div className="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center">
 								<Button
 									variant="outline"
